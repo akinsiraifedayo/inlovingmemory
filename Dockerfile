@@ -8,7 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm ci --omit=dev && \
+ENV NODE_ENV=production
+RUN npm ci && \
     npm cache clean --force
 
 # Copy application files
