@@ -5,17 +5,14 @@ services:
     image: ghcr.io/akinsiraifedayo/inlovingmemory:latest
     container_name: grace-akinsira-memorial
     restart: unless-stopped
+    env_file:
+      - .env
 
     ports:
-      - "2025:2025"
+      - "${PORT:-2025}:${PORT:-2025}"
 
     environment:
       - NODE_ENV=production
-      - PORT=2025
-      - APP_NAME=Grace Akinsira Memorial
-      - DOMAIN=graceakinsira.siteownr.com
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD_HASH=331bdfc4ea633891639540bff5f1b9c7bcbc6d8bb79ab1378be56b216f0b111d
       - MESSAGES_FILE=/app/data/messages.json
 
     volumes:
