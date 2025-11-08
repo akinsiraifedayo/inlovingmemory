@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Git
+.git/
+.gitignore
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Documentation
+README.md
+*.md
+
+# Development
+.vscode/
+.idea/
+
+# Old files
+memorial.html
+admin.html
+messages.json
+1001995400.jpg
+Memorial_Video_Grace_Akinsira.mp4
+*.mp3
+
+# Testing
+test/
+tests/
+*.test.js
+
+# CI/CD
+.github/
+
+# Docker
+Dockerfile
+.dockerignore
+docker compose*.yml
+
+# Logs
+logs/
+*.log
+
+# Misc
+.DS_Store

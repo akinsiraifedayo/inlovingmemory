@@ -1,0 +1,117 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+      - '.gitignore'
+
+concurrency:
+  group: production/${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  docker-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: akinsiraifedayo
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Image 🐳
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/akinsiraifedayo/inlovingmemory:latest
+
+  server-deploy:
+    needs: docker-deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy compose file to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: './infra/deployments/docker-compose.yml'
+          target: ~/grace-akinsira/
+          overwrite: true
+          strip_components: 3
+
+      - name: Deploy Grace Akinsira Memorial
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          script: |
+            cd ~/grace-akinsira
+
+            # Create data directory if it doesn't exist (PRESERVE existing messages.json)
+            mkdir -p data
+            if [ ! -f data/messages.json ]; then
+              echo '[]' > data/messages.json
+              echo "✅ Created new messages.json"
+            else
+              echo "✅ Existing messages.json preserved ($(cat data/messages.json | wc -l) lines)"
+            fi
+
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u akinsiraifedayo --password-stdin
+
+            # Pull latest image
+            docker compose pull
+
+            # Gracefully stop and restart
+            docker compose down
+            docker compose up -d --remove-orphans
+
+            # Wait for health checks to pass
+            echo "Waiting for services to become healthy..."
+            sleep 20
+
+            # Prune old images to save disk space
+            docker image prune -f
+
+            # Show running containers and their health status
+            echo "Container status:"
+            docker compose ps
+
+            # Verify messages.json is intact
+            if [ -f data/messages.json ]; then
+              MESSAGE_COUNT=$(cat data/messages.json | grep -o '"id"' | wc -l)
+              echo "💾 Messages preserved: $MESSAGE_COUNT messages in database"
+            fi
+
+            # Show recent logs
+            echo "Recent logs:"
+            docker compose logs --tail=30
+
+            # Health check
+            echo "Health check:"
+            curl -f http://localhost:2025/health || echo "⚠️ Health check failed"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🚀 Deployment completed successfully!"
+          echo "🌐 Website: https://graceakinsira.siteownr.com/"
+          echo "📊 Admin: https://graceakinsira.siteownr.com/admin"
