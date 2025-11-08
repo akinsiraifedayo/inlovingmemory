@@ -3,7 +3,7 @@ name: Deploy to Production
 on:
   push:
     branches:
-      - 'main'
+      - 'master'
     paths-ignore:
       - '**/*.md'
       - '**/*.txt'
@@ -36,7 +36,6 @@ jobs:
           push: true
           tags: |
             ghcr.io/akinsiraifedayo/inlovingmemory:latest
-
 
   server-deploy:
     needs: docker-deploy
