@@ -5,7 +5,9 @@ module.exports = {
     port: process.env.PORT || 3000,
     nodeEnv: process.env.NODE_ENV || 'development',
     appName: process.env.APP_NAME || 'Grace Akinsira Memorial',
-    messagesFile: path.join(__dirname, '..', process.env.MESSAGES_FILE || './data/messages.json'),
+    messagesFile: path.isAbsolute(process.env.MESSAGES_FILE || '')
+        ? process.env.MESSAGES_FILE
+        : path.join(__dirname, '..', process.env.MESSAGES_FILE || './data/messages.json'),
 
     // Security settings
     cors: {
