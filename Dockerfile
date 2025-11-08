@@ -9,7 +9,7 @@ COPY package*.json ./
 
 # Install only production dependencies
 ENV NODE_ENV=production
-RUN npm ci && \
+RUN npm install --production && \
     npm cache clean --force
 
 # Copy application files
