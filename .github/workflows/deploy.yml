@@ -37,6 +37,7 @@ jobs:
           tags: |
             ghcr.io/akinsiraifedayo/inlovingmemory:latest
 
+
   server-deploy:
     needs: docker-deploy
     runs-on: ubuntu-latest
