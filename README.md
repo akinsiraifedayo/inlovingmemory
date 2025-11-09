@@ -1,4 +1,4 @@
-# In Loving Memory of Grace Akinsira
+# In Loving Memory of Mrs Grace Akinsira
 
 ---
 
@@ -9,7 +9,7 @@
 
 ## A Beautiful Soul
 
-Grace Akinsira was more than a name—she was a pillar of strength, love, and unwavering dedication. Her presence in our family touched countless lives, and her legacy continues to inspire us all.
+Mrs Grace Akinsira was more than a name—she was a pillar of strength, love, and unwavering dedication. Her presence in our family touched countless lives, and her legacy continues to inspire us all.
 
 ## A Mother's Love
 
@@ -27,7 +27,7 @@ The impact of Grace's life extends far beyond what words can capture. She was:
 
 ## Forever in Our Hearts
 
-Though she has departed from this world, Grace Akinsira's spirit lives on in the hearts of all who knew her. The love she gave, the lessons she taught, and the example she set will continue to guide us through the years ahead.
+Though she has departed from this world, Mrs Grace Akinsira's spirit lives on in the hearts of all who knew her. The love she gave, the lessons she taught, and the example she set will continue to guide us through the years ahead.
 
 Her memory is a blessing. Her legacy is eternal.
 
@@ -35,7 +35,7 @@ Her memory is a blessing. Her legacy is eternal.
 
 *"A mother's love is the fuel that enables a normal human being to do the impossible."*
 
-Rest in perfect peace, Grace Akinsira.
+Rest in perfect peace, Mrs Grace Akinsira.
 Your love remains with us always.
 
 ---
