@@ -489,6 +489,7 @@
             position: relative;
             overflow: hidden;
             animation: messageSlideIn 0.5s ease-out;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         @keyframes messageSlideIn {
@@ -810,6 +811,11 @@
 
                     const messageObj = await response.json();
 
+                    // Save the token to localStorage for edit/delete capability
+                    if (messageObj.token) {
+                        saveMessageToken(messageObj.id, messageObj.token);
+                    }
+
                     // Add message to display
                     addMessageToDisplay(messageObj);
 
@@ -834,6 +840,42 @@
             });
         }
 
+        // LocalStorage management for message tokens (6 month expiry)
+        function saveMessageToken(messageId, token) {
+            const tokens = getMessageTokens();
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 6);
+            tokens[messageId] = { token, expiry: expiryDate.getTime() };
+            localStorage.setItem('messageTokens', JSON.stringify(tokens));
+        }
+
+        function getMessageTokens() {
+            const tokens = localStorage.getItem('messageTokens');
+            if (!tokens) return {};
+            const parsed = JSON.parse(tokens);
+            // Clean up expired tokens
+            const now = Date.now();
+            Object.keys(parsed).forEach(id => {
+                if (parsed[id].expiry < now) {
+                    delete parsed[id];
+                }
+            });
+            localStorage.setItem('messageTokens', JSON.stringify(parsed));
+            return parsed;
+        }
+
+        function getMessageToken(messageId) {
+            const tokens = getMessageTokens();
+            return tokens[messageId]?.token;
+        }
+
+        function canEditMessage(messageId) {
+            const tokens = getMessageTokens();
+            const tokenData = tokens[messageId];
+            if (!tokenData) return false;
+            return tokenData.expiry > Date.now();
+        }
+
         let currentPage = 1;
         async function loadMessages() {
             try {
@@ -855,15 +897,117 @@
 
             const messageCard = document.createElement('div');
             messageCard.className = 'message-card';
+            messageCard.dataset.messageId = messageObj.id;
+
+            // Check if user owns this message
+            const canEdit = canEditMessage(messageObj.id);
+            const editButtons = canEdit ? `
+                <div class="message-actions" style="margin-top: 10px;">
+                    <button onclick="editMessage(${messageObj.id})" style="padding: 5px 15px; margin-right: 10px; background: var(--gold); color: var(--dark); border: none; cursor: pointer; border-radius: 4px; font-family: inherit;">Edit</button>
+                    <button onclick="deleteMessage(${messageObj.id})" style="padding: 5px 15px; background: #d32f2f; color: white; border: none; cursor: pointer; border-radius: 4px; font-family: inherit;">Delete</button>
+                </div>
+            ` : '';
+
+            const editedBadge = messageObj.edited ? '<span style="color: var(--gold); font-size: 0.85em; margin-left: 10px;">(Edited)</span>' : '';
+
             messageCard.innerHTML = `
                 <div class="message-header">
-                    <span class="message-author">${escapeHtml(messageObj.name)}</span>
+                    <span class="message-author">${escapeHtml(messageObj.name)}${editedBadge}</span>
                     <span class="message-date">${messageObj.date}</span>
                 </div>
-                <div class="message-text">${escapeHtml(messageObj.message)}</div>
+                <div class="message-text" data-message-id="${messageObj.id}">${escapeHtml(messageObj.message)}</div>
+                ${editButtons}
             `;
 
             messagesContainer.insertBefore(messageCard, messagesContainer.firstChild);
+        }
+
+        async function editMessage(messageId) {
+            const messageTextElement = document.querySelector(`.message-text[data-message-id="${messageId}"]`);
+            const currentText = messageTextElement.textContent;
+
+            const newText = prompt('Edit your message:', currentText);
+            if (!newText || newText.trim() === '' || newText === currentText) {
+                return;
+            }
+
+            try {
+                const token = getMessageToken(messageId);
+                if (!token) {
+                    alert('You no longer have permission to edit this message.');
+                    return;
+                }
+
+                const response = await fetch(`/api/messages/${messageId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Submitter-Token': token
+                    },
+                    body: JSON.stringify({ message: newText })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to edit message');
+                }
+
+                const result = await response.json();
+
+                // Update the display
+                messageTextElement.textContent = result.message.message;
+
+                // Add edited badge if not already present
+                const messageCard = document.querySelector(`.message-card[data-message-id="${messageId}"]`);
+                const authorSpan = messageCard.querySelector('.message-author');
+                if (!authorSpan.innerHTML.includes('(Edited)')) {
+                    authorSpan.innerHTML += '<span style="color: var(--gold); font-size: 0.85em; margin-left: 10px;">(Edited)</span>';
+                }
+
+                alert('Message updated successfully!');
+            } catch (error) {
+                console.error('Error editing message:', error);
+                alert(error.message || 'Failed to edit message.');
+            }
+        }
+
+        async function deleteMessage(messageId) {
+            if (!confirm('Are you sure you want to delete this message? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const token = getMessageToken(messageId);
+                if (!token) {
+                    alert('You no longer have permission to delete this message.');
+                    return;
+                }
+
+                const response = await fetch(`/api/messages/${messageId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-Submitter-Token': token
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete message');
+                }
+
+                // Remove from display
+                const messageCard = document.querySelector(`.message-card[data-message-id="${messageId}"]`);
+                if (messageCard) {
+                    messageCard.style.opacity = '0';
+                    messageCard.style.transform = 'scale(0.9)';
+                    setTimeout(() => messageCard.remove(), 300);
+                }
+
+                alert('Message deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                alert(error.message || 'Failed to delete message.');
+            }
         }
 
         function escapeHtml(text) {
